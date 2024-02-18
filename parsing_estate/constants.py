@@ -8,15 +8,21 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+SMPT_SERVER = "smtp.mail.ru"
+PORT = 465
+SENDER_EMAIL = os.getenv('EMAIL')
+SEND_PASSWORD = os.getenv('EMAIL_PASSWORD')
+SUBJECT = 'Собранные данные ботом'
+BODY = 'В приложении прикреплен файл.'
 PATTERN_VALID_MAIL = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$'
 ID_ROOMS = {
-    '0': '5695', 
+    '0': '5695',
     '1': '5696',
-    '2': '5697', 
-    '3': '5698', 
+    '2': '5697',
+    '3': '5698',
     '4': '5699',
     '5': '5700',
-    '6': '414718', 
+    '6': '414718',
 }
 DATETIME_FORMAT = '%Y-%m-%d_%H-%M-%S'
 FILE_OUTPUT_DIR_PATH = 'results'
@@ -38,12 +44,11 @@ MONTH_NAMES_CYRILLIC_TO_LATIN = {
     "сентябрь": "September",
     "октябрь": "October",
     "ноябрь": "November",
-    "декабрь": "December"
+    "декабрь": "December",
 }
 TRANSFORM_INPUT_DATA = {
     'area': {
         '0': 'avito.ru',
-        '1': 'cian',
     },
     'rooms_count': {
         '0': 'апартаменты',
@@ -56,14 +61,13 @@ TRANSFORM_INPUT_DATA = {
     },
     'send_parsing_file': {
         '0': 'mail',
-        '1': 'chat_bot',
     },
 }
 CONFIG = {
-        'area': 'not specified',
-        'rooms_count': 'not specified',
-        'location': 'all/',
-        'already_exists': datetime.datetime(1999, 1, 1, 12, 0, 0),
-        'send_parsing_file': ['not specified'],
-        'accepted_mail': 'not specified',
-    }
+    'area': 'not specified',
+    'rooms_count': 'not specified',
+    'location': 'all/',
+    'already_exists': datetime.datetime(1999, 1, 1, 12, 0, 0),
+    'send_parsing_file': ['not specified'],
+    'accepted_mail': 'not specified',
+}

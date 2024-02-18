@@ -1,19 +1,29 @@
+import os
+import time
+import glob
 import logging
-from typing import Type, NoReturn, Tuple, List, Dict
+from typing import NoReturn
 
 from multiprocessing import Process, Queue
+from dotenv import load_dotenv
 
-from .constants import ID_ROOMS
+from .constants import (
+    ID_ROOMS,
+    PORT,
+    SENDER_EMAIL,
+    SEND_PASSWORD,
+    SUBJECT,
+    SMPT_SERVER,
+    BODY,
+    BASE_DIR,
+    FILE_OUTPUT_DIR_PATH,
+)
 from .tg_bot import tg_bot
 from .logging_config import start_logging_config
-from .parser_estate import get_url_with_input_params_avito, get_url_with_input_params_cian
-from .outputs import file_output
+from .parser_estate import get_url_with_input_params_avito
+from .outputs import file_output, send_email
 
-
-URL_ESTATE_AREA = {
-    '0': ('https://www.avito.ru/', get_url_with_input_params_avito),
-    '1': ('https://www.cian.ru/', get_url_with_input_params_cian),
-}
+load_dotenv()
 
 
 def main() -> NoReturn:
@@ -23,35 +33,32 @@ def main() -> NoReturn:
     while True:
         if not queue.empty():
             input_user_data = queue.get()
-            logging.info(f'Передан запрос на парсинг')
-
-            id_rooms = [ID_ROOMS[id] for id in input_user_data["rooms_count"]]
-
-            logging.info(f'id_rooms : {id_rooms}')
-            logging.info(f'locations : {input_user_data["location"]}')
-            
-            parsers = [None, None]
-            for index in range(len(input_user_data["area"])):
-                parsers[index] = URL_ESTATE_AREA[input_user_data["area"][index]]
-                logging.info(f' parsers[index] {parsers[index]}')
-            first_parser = parsers[0]
-            second_parser = parsers[1] 
-            if first_parser:
-                # Запуск парсера
-                logging.info(f'first_parser : {first_parser}')
-                parsing_func = first_parser[1]
-                url = first_parser[0]
-                result = parsing_func(url=url, id_rooms=id_rooms, search_place=input_user_data["location"], already_exists=input_user_data["already_exists"])
-            if second_parser:
-                pass
-
-            logging.info('данные собраны')
-            if '0' in input_user_data["send_parsing_file"]:
-                pass 
-
-            file_output(result, 'avito.ru')
-            logging.info('данные отправлены')
-
+            if isinstance(input_user_data, dict):
+                logging.info(f'Передан запрос на парсинг')
+                id_rooms = [ID_ROOMS[id] for id in input_user_data["rooms_count"]]
+                result = get_url_with_input_params_avito(
+                    search_place=input_user_data["location"],
+                    id_rooms=id_rooms,
+                    already_exists=input_user_data["already_exists"],
+                )
+                file_output(result, 'avito.ru')
+                files = glob.glob(os.path.join(BASE_DIR / FILE_OUTPUT_DIR_PATH, '*'))
+                latest_file = max(files, key=os.path.getctime)
+                logging.info(f'данные собраны в {latest_file}')
+                if '0' in input_user_data["send_parsing_file"]:
+                    mail = input_user_data['mail']
+                    # Получаем крайний файл в папке результатов
+                    send_email(
+                        SMPT_SERVER,
+                        PORT,
+                        SENDER_EMAIL,
+                        SEND_PASSWORD,
+                        mail,
+                        SUBJECT,
+                        BODY,
+                        latest_file,
+                    )
+                    logging.info(f'данные отправлены на {mail}')
 
 
 if __name__ == '__main__':

@@ -1,5 +1,3 @@
-from typing import Type
-
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, JSON, DateTime
 from sqlalchemy.orm import Session, declarative_base, relationship
 
@@ -7,16 +5,16 @@ from sqlalchemy.orm import Session, declarative_base, relationship
 Base = declarative_base()
 
 
-class Chat(Type[Base]):
+class Chat(Base):
     __tablename__ = 'chat'
     chat = Column(Integer, primary_key=True)
     config = relationship("Config", uselist=False, back_populates="chat")
 
     def __repr__(self) -> str:
         return f'Chat id: {self.chat}'
-    
 
-class Config(Type[Base]):
+
+class Config(Base):
     __tablename__ = 'config'
     id = Column(Integer, primary_key=True)
     chat_id = Column(Integer, ForeignKey('chat.chat'))
@@ -40,7 +38,4 @@ def start_session() -> Session:
     engine = create_engine('sqlite:///sqlite.db', echo=False)
     session = Session(engine)
     Base.metadata.create_all(engine)
-    return session 
-
-
-
+    return session

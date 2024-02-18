@@ -13,4 +13,4 @@ def start_logging_config() -> NoReturn:
             logging.FileHandler(LOG_FILE_DIR, encoding='UTF-8'),
             logging.StreamHandler(sys.stdout),
         ],
-    )   
+    )

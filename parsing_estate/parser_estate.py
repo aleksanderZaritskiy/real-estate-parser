@@ -11,44 +11,87 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 
 from .utils import parsing_data_grinding, converter_time
-from .logging_config import start_logging_config
 
 
-start_logging_config()
-
-
-def parsing_estate_offers_avito(url: str, time_config: datetime, driver: Type[Driver] = None) -> List[Tuple[str]]:
-    logging.info(f'Начало работы парсера по сбору html кода c {url} страница #{url[url.find("p=") + 2]:}')
+def parsing_estate_offers_avito(
+    url: str, time_config: datetime, driver: Type[Driver] = None
+) -> List[Tuple[str]]:
+    logging.info(
+        f'Начало работы парсера по сбору html кода c {url} страница #{url[url.find("p=") + 2]:}'
+    )
     data = []
 
     try:
         driver.get(url)
-        parent_element = driver.find_element(By.CSS_SELECTOR, 'div[data-marker="catalog-serp"]')
+        parent_element = driver.find_element(
+            By.CSS_SELECTOR, 'div[data-marker="catalog-serp"]'
+        )
         childrens = parent_element.get_attribute("outerHTML")
         soup = BeautifulSoup(childrens, 'lxml')
-        offers = [data.find('div', {'class': 'styles-module-theme-CRreZ'}) for data in soup.find('div', {'class': 'items-items-kAJAg'})]
+        offers = [
+            data.find('div', {'class': 'styles-module-theme-CRreZ'})
+            for data in soup.find('div', {'class': 'items-items-kAJAg'})
+        ]
         for offer in offers:
             try:
-                exists_allready = offer.find('div', {'data-marker': 'item-date/tooltip/reference'}).text
+                exists_allready = offer.find(
+                    'div', {'data-marker': 'item-date/tooltip/reference'}
+                ).text
+                logging.info(f'{exists_allready} : {converter_time(exists_allready)}')
                 if time_config > converter_time(exists_allready):
                     return data
                 price = offer.find('meta', {'itemprop': 'price'})['content']
-                location = offer.find('p', {'class': 'styles-module-root-_KFFt styles-module-size_s-awPvv styles-module-size_s-_P6ZA stylesMarningNormal-module-root-OSCNq stylesMarningNormal-module-paragraph-s-_c6vD'}).text                
-                link = urljoin('https://www.avito.ru/', offer.find('a', {'itemprop': 'url'})['href'])
-                rooms_count, type_estate, area_estate, floor = parsing_data_grinding(offer.find('h3', {'itemprop': 'name'}).text)
-                data.append((type_estate, rooms_count, area_estate, floor, price, location, link, exists_allready))
+                location = offer.find(
+                    'p',
+                    {
+                        'class': 'styles-module-root-_KFFt styles-module-size_s-awPvv styles-module-size_s-_P6ZA stylesMarningNormal-module-root-OSCNq stylesMarningNormal-module-paragraph-s-_c6vD'
+                    },
+                ).text
+                link = urljoin(
+                    'https://www.avito.ru/', offer.find('a', {'itemprop': 'url'})['href']
+                )
+                rooms_count, type_estate, area_estate, floor = parsing_data_grinding(
+                    offer.find('h3', {'itemprop': 'name'}).text
+                )
+                data.append(
+                    (
+                        type_estate,
+                        rooms_count,
+                        area_estate,
+                        floor,
+                        price,
+                        location,
+                        link,
+                        exists_allready,
+                    )
+                )
             except AttributeError:
                 logging.info('Игнор, реклама.')
                 continue
         button = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, 'a[data-marker="pagination-button/nextPage"]'))
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, 'a[data-marker="pagination-button/nextPage"]')
+            )
         )
         if button:
             button.send_keys(Keys.ENTER)
-            next_page_parsing = parsing_estate_offers_avito(driver.current_url, time_config, driver=driver)
+            next_page_parsing = parsing_estate_offers_avito(
+                driver.current_url, time_config, driver=driver
+            )
             if next_page_parsing:
                 data.extend(next_page_parsing)
-        return [('type_place', 'rooms_count', 'area', 'floor', 'price(Rub)', 'location', 'link', 'allready_exists')] + data
+        return [
+            (
+                'type_place',
+                'rooms_count',
+                'area',
+                'floor',
+                'price(Rub)',
+                'location',
+                'link',
+                'allready_exists',
+            )
+        ] + data
     except Exception as error:
         logging.error(error)
         driver.close()
@@ -59,39 +102,40 @@ def parsing_estate_offers_avito(url: str, time_config: datetime, driver: Type[Dr
 # C указанными параметрами
 def get_url_with_input_params_avito(**kwargs: Dict[str, Any]) -> List[Tuple[str]]:
     logging.info('Начало работы по формированию урл с указанными параметрами')
-    logging.info(kwargs.items())
     # Перевод Selenium в фоновый режим
     driver = Driver(uc=True, headless=True)
     try:
         # Открываем ендпоинт с указанной локацией поиска
-        driver.get(kwargs.get('url') + kwargs.get('search_place') + 'kvartiry/prodam-ASgBAgICAUSSA8YQ?cd=1')
+        driver.get(
+            'https://www.avito.ru/'
+            + kwargs.get('search_place')
+            + 'kvartiry/prodam-ASgBAgICAUSSA8YQ?cd=1'
+        )
         # Скролим страницу вниз, для доступа к меню
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         for id in kwargs.get('id_rooms'):
             # Выбераем указанные комнаты
             rooms = WebDriverWait(driver, 20).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, f'span[data-marker="params[549]({id})/text"]'))
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, f'span[data-marker="params[549]({id})/text"]')
+                )
             )
             rooms.click()
-        # Подтвержаем выбор     
+        # Подтвержаем выбор
         accept_choise = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[data-marker="search-filters/submit-button"]'))
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, 'button[data-marker="search-filters/submit-button"]')
+            )
         )
-        accept_choise.send_keys(Keys.ENTER) 
-        # Посты сразу отсортированы по дате 
+        accept_choise.send_keys(Keys.ENTER)
+        # Посты сразу отсортированы по дате
         # И текущей странице
-        url = driver.current_url + '&s=104&p=1' 
+        url = driver.current_url + '&s=104&p=1'
         logging.info(url)
-        return parsing_estate_offers_avito(url, kwargs.get('already_exists'), driver=driver)
+        return parsing_estate_offers_avito(
+            url, kwargs.get('already_exists'), driver=driver
+        )
     except Exception as error:
         logging.error(error)
         driver.close()
         driver.quit()
-
-
-def parsing_estate_offers_cian(url: str, time_config: datetime, driver: Type[Driver] = None) -> List[Tuple[str]]:
-    return url
-
-
-def get_url_with_input_params_cian(**kwargs: Dict[str, Any]) -> List[Tuple[str]]:
-    return parsing_estate_offers_cian(url=kwargs.get('url'), time_config=kwargs.get('already_exists'), driver=None)
