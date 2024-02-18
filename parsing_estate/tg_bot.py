@@ -401,7 +401,7 @@ def start_command(update: Type[Update], context: Type[CallbackContext]) -> None:
         queue.put(data)
         logging.info(f'Объект чата {chat_obj} добавлен в очередь')
         update.message.reply_text(
-            f'Сбор данных займет время. Результат будет выслан в соответствии с указанными настройками. Ожидайте'
+            f'Сбор данных займет время. Результат будет выслан на почту. Ожидайте'
         )
         return
 

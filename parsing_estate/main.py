@@ -1,5 +1,4 @@
 import os
-import time
 import glob
 import logging
 from typing import NoReturn
