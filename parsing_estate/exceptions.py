@@ -26,3 +26,7 @@ class ImportantConfigsDoNotExists(KeyError):
     """Вызывается когда пользователь не указал обязательные конфиги для парсера"""
 
     pass
+
+
+class UnConnectedError(Exception):
+    """ Вызывается когда по каким-то причинам происходит разрыв соединения"""
